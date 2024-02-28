@@ -1,0 +1,54 @@
+name: Test e2e workflow
+
+on:
+  push:
+    branches:
+      - main
+      - test-detox
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e-ios:
+    runs-on: macos-14-large
+    steps:
+
+      - name: ci/checkout-repo
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+
+      - name: ci/prepare-ios-build
+        uses: ./.github/actions/prepare-ios-build
+
+      - name: Brew install
+        run: |
+          brew tap wix/brew
+          brew install applesimutils
+
+      - name: ci/build-ios-simulator
+        env:
+          TAG: "${{ github.ref_name }}"
+          AWS_ACCESS_KEY_ID: "${{ secrets.MM_MOBILE_BETA_AWS_ACCESS_KEY_ID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.MM_MOBILE_BETA_AWS_SECRET_ACCESS_KEY }}"
+          MATTERMOST_WEBHOOK_URL: "${{ secrets.MM_MOBILE_BETA_MATTERMOST_WEBHOOK_URL }}"
+          GITHUB_TOKEN: "${{ secrets.MM_MOBILE_GITHUB_TOKEN }}"
+        run: bundle exec fastlane ios simulator --env ios.simulator
+        working-directory: ./fastlane
+
+      - name: ci/upload-ios-pr-simulator
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: ios-build-simulator-${{ github.run_id }}
+          path: Mattermost-simulator-x86_64.app.zip
+
+      - name: Download iOS build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-build-simulator-${{ github.run_id }}
+          path: mobile-artifacts
+
+      - name: Unzip artifact
+        run: unzip -o mobile-artifacts/*.zip -d mobile-artifacts/
+
+      - name: Run react-native
+        run: npm run start
