@@ -1,0 +1,149 @@
+name: Detox E2E Tests Template
+
+on:
+    push:
+        branches:
+            - 'test-and'
+    workflow_call:
+        inputs:
+            remove-pr-label:
+                description: 'Remove PR label'
+                required: false
+                type: boolean
+                default: false
+            status_check_context:
+                type: string
+                required: true
+            commit_sha:
+                type: string
+                required: true
+            run-type:
+                type: string
+                required: false
+                default: 'PR'
+            testcase_failure_fatal:
+                description: 'Should failures be considered fatal'
+                required: false
+                type: boolean
+                default: false
+
+env:
+  AWS_REGION: 'us-east-1'
+  ADMIN_EMAIL: ${{ secrets.MM_MOBILE_E2E_ADMIN_EMAIL }}
+  ADMIN_USERNAME: ${{ secrets.MM_MOBILE_E2E_ADMIN_USERNAME }}
+  ADMIN_PASSWORD: ${{ secrets.MM_MOBILE_E2E_ADMIN_PASSWORD }}
+  BRANCH: ${{ github.head_ref || github.ref_name }} 
+  COMMIT_HASH: ${{ github.sha }}
+  DETOX_AWS_S3_BUCKET: 'mattermost-detox-report'
+  DETOX_AWS_ACCESS_KEY_ID: ${{ secrets.MM_MOBILE_DETOX_AWS_ACCESS_KEY_ID }}
+  DETOX_AWS_SECRET_ACCESS_KEY: ${{ secrets.MM_MOBILE_DETOX_AWS_SECRET_ACCESS_KEY }}
+  HEADLESS: false
+  TYPE: ${{ inputs.run-type }}
+  PULL_REQUEST: 'https://github.com/mattermost/mattermost-mobile/pull/${{ github.event.number }}'
+  SITE_1_URL: ${{ secrets.MM_MOBILE_E2E_SITE_1_URL }}
+  SITE_2_URL: ${{ secrets.MM_MOBILE_E2E_SITE_2_URL }}
+  SITE_3_URL: ${{ secrets.MM_MOBILE_E2E_SITE_3_URL }}
+  ZEPHYR_ENABLE: false
+  JIRA_PROJECT_KEY: 'MM'
+  ZEPHYR_API_KEY: ${{ secrets.MM_MOBILE_E2E_ZEPHYR_API_KEY }}
+  ZEPHYR_FOLDER_ID: '3233873'
+  TEST_CYCLE_LINK_PREFIX: ${{ secrets.MM_MOBILE_E2E_TEST_CYCLE_LINK_PREFIX }}
+  WEBHOOK_URL: ${{ secrets.MM_MOBILE_E2E_WEBHOOK_URL }}
+  FAILURE_MESSAGE: "Something has failed"
+  
+jobs:
+  update-initial-status:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: mattermost/actions/delivery/update-commit-status@main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          repository_full_name: ${{ github.repository }}
+          commit_sha: ${{ inputs.commit_sha }}
+          context: ${{ inputs.status_check_context }}
+          description: Detox tests for mattermost mobile app
+          status: pending
+
+  generate-specs:
+    needs: update-initial-status
+    runs-on: ubuntu-22.04
+    outputs:
+      specs: ${{ steps.generate-specs.outputs.specs }}
+      build_id: ${{ env.BUILD_ID }}
+      device_name: ${{ env.DEVICE_NAME }}
+      device_os_version: ${{ env.DEVICE_OS_VERSION }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set Build ID
+        id: resolve-device
+        run: |
+          cd detox
+          DEVICE_NAME=$(node -p "require('./.detoxrc').devices['android'].device.avdName")
+          DEVICE_OS_VERSION=$(node -p "require('./.detoxrc').devices['android'].device.api")
+          BUILD_ID="${{ github.run_id }}-$DEVICE_NAME-$DEVICE_OS_VERSION"
+
+          echo "BUILD_ID=$(echo ${BUILD_ID} | sed 's/ /_/g')" >> $GITHUB_ENV
+          echo "DEVICE_NAME=$(echo ${DEVICE_NAME})" >> $GITHUB_ENV
+          echo "DEVICE_OS_VERSION=$(echo ${DEVICE_OS_VERSION})" >> $GITHUB_ENV
+
+      - name: Generate Test Specs
+        id: generate-specs
+        uses: ./.github/actions/generate-specs
+        with:
+          parallelism: 10
+          search_path: detox/e2e/test
+          device_name: ${{ env.DEVICE_NAME }}
+          device_os_version: ${{env.DEVICE_OS_VERSION}}
+        
+  build-android-apk:
+    needs: update-initial-status
+    runs-on: macos-14-large
+    env:
+      ORG_GRADLE_PROJECT_jvmargs: -Xmx8g
+    steps:
+      - name: ci/checkout-repo
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: ci/prepare-android-build
+        uses: ./.github/actions/prepare-android-build
+        env:
+          STORE_FILE: "${{ secrets.MM_MOBILE_STORE_FILE }}"
+          STORE_ALIAS: "${{ secrets.MM_MOBILE_STORE_ALIAS }}"
+          STORE_PASSWORD: "${{ secrets.MM_MOBILE_STORE_PASSWORD }}"
+          MATTERMOST_BUILD_GH_TOKEN: "${{ secrets.MATTERMOST_BUILD_GH_TOKEN }}"
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "adopt"
+          cache: "gradle"
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v3
+
+      - name: Detox build
+        run: |
+          cd detox
+          npm install
+          npm install -g detox-cli
+          npm run e2e:android-build
+
+      - name: ci/upload-android-pr-build
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: android-build-apk-${{ github.run_id }}
+          path: "android/app/build/outputs/apk/**/app-*.apk"
