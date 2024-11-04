@@ -32,7 +32,7 @@ export MATCH_TYPE=development
 export MATCH_SHALLOW_CLONE=true
 export MATCH_SKIP_DOCS=true
 export FASTLANE_TEAM_ID=<itunes connect team ID>
-export SYNC_PROVISIONING_PROFILES=false
+export SYNC_PROVISIONING_PROFILES=true
 
 ############ NEEDED TO UPLOAD THE BUILD TO TESTFLIGHT ############
 export PILOT_USERNAME=<itunes connect account>
