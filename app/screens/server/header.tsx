@@ -1,13 +1,13 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React from "react";
-import { View } from "react-native";
+import React from 'react';
+import {View} from 'react-native';
 
-import FormattedText from "@components/formatted_text";
-import { useIsTablet } from "@hooks/device";
-import { changeOpacity, makeStyleSheetFromTheme } from "@utils/theme";
-import { typography } from "@utils/typography";
+import FormattedText from '@components/formatted_text';
+import {useIsTablet} from '@hooks/device';
+import {changeOpacity, makeStyleSheetFromTheme} from '@utils/theme';
+import {typography} from '@utils/typography';
 
 type Props = {
     additionalServer: boolean;
@@ -18,31 +18,31 @@ const getStyleSheet = makeStyleSheetFromTheme((theme: Theme) => ({
     textContainer: {
         marginBottom: 32,
         maxWidth: 600,
-        width: "100%",
+        width: '100%',
         paddingHorizontal: 20,
     },
     welcome: {
         marginTop: 12,
         color: changeOpacity(theme.centerChannelColor, 0.64),
-        ...typography("Heading", 400, "SemiBold"),
+        ...typography('Heading', 400, 'SemiBold'),
     },
     connect: {
         width: 300,
         letterSpacing: -1,
         color: theme.centerChannelColor,
         marginVertical: 12,
-        ...typography("Heading", 1000, "SemiBold"),
+        ...typography('Heading', 1000, 'SemiBold'),
     },
     connectTablet: {
         width: undefined,
     },
     description: {
         color: changeOpacity(theme.centerChannelColor, 0.64),
-        ...typography("Body", 200, "Regular"),
+        ...typography('Body', 200, 'Regular'),
     },
 }));
 
-const ServerHeader = ({ additionalServer, theme }: Props) => {
+const ServerHeader = ({additionalServer, theme}: Props) => {
     const isTablet = useIsTablet();
     const styles = getStyleSheet(theme);
 
@@ -50,25 +50,25 @@ const ServerHeader = ({ additionalServer, theme }: Props) => {
     if (additionalServer) {
         title = (
             <FormattedText
-                defaultMessage="Add a server"
-                id="servers.create_button"
+                defaultMessage='Add a server'
+                id='servers.create_button'
                 style={[
                     styles.connect,
                     isTablet ? styles.connectTablet : undefined,
                 ]}
-                testID="server_header.title.add_server"
+                testID='server_header.title.add_server'
             />
         );
     } else {
         title = (
             <FormattedText
-                defaultMessage="Let’s Connect to a Server!"
-                id="mobile.components.select_server_view.msg_connect"
+                defaultMessage='Let’s Connect to a Server!'
+                id='mobile.components.select_server_view.msg_connect'
                 style={[
                     styles.connect,
                     isTablet ? styles.connectTablet : undefined,
                 ]}
-                testID="server_header.title.connect_to_server"
+                testID='server_header.title.connect_to_server'
             />
         );
     }
@@ -77,18 +77,18 @@ const ServerHeader = ({ additionalServer, theme }: Props) => {
         <View style={styles.textContainer}>
             {!additionalServer && (
                 <FormattedText
-                    defaultMessage="Welcome"
-                    id="mobile.components.select_server_view.msg_welcome"
-                    testID="server_header.welcome"
+                    defaultMessage='Welcome'
+                    id='mobile.components.select_server_view.msg_welcome'
+                    testID='server_header.welcome'
                     style={styles.welcome}
                 />
             )}
             {title}
             <FormattedText
                 defaultMessage="A server is your team's communication hub!! accessed using a unique URL"
-                id="mobile.components.select_server_view.msg_description"
+                id='mobile.components.select_server_view.msg_description'
                 style={styles.description}
-                testID="server_header.description"
+                testID='server_header.description'
             />
         </View>
     );
