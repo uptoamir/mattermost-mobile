@@ -28,7 +28,7 @@ export MATCH_PASSWORD=<itunes connect password>
 export MATCH_KEYCHAIN_PASSWORD=<the password of the user running the build in the build machine>
 export MATCH_GIT_URL=<private git repository to allow match sync the provisioning profiles>
 export MATCH_APP_IDENTIFIER=com.mattermost.rnbeta.NotificationService,com.mattermost.rnbeta.MattermostShare,com.mattermost.rnbeta
-export MATCH_TYPE=appstore
+export MATCH_TYPE=development
 export MATCH_SHALLOW_CLONE=true
 export MATCH_SKIP_DOCS=true
 export FASTLANE_TEAM_ID=<itunes connect team ID>
@@ -55,7 +55,7 @@ export EXTENSION_APP_IDENTIFIER=com.mattermost.rnbeta.MattermostShare
 export NOTIFICATION_SERVICE_IDENTIFIER=com.mattermost.rnbeta.NotificationService
 export IOS_APP_GROUP=group.com.mattermost.rnbeta
 export IOS_ICLOUD_CONTAINER=iCloud.com.mattermost.rnbeta
-export IOS_BUILD_EXPORT_METHOD=app-store
+export IOS_BUILD_EXPORT_METHOD=development
 
 ############ SET TO TRUE TO UPLOAD THE BUILDS TO TESTFLIGH AND GOOGLE PLAY ############
 export SUBMIT_IOS_TO_TESTFLIGHT=false
