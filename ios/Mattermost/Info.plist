@@ -32,7 +32,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>mattermost</string>
-				<string>mmauth</string>
+				<string>mmauthbeta</string>
 			</array>
 		</dict>
 	</array>
